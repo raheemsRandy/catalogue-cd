@@ -17,7 +17,7 @@ pipeline {
         disableConcurrentBuilds()
     }
     parameters {
-        string { name: 'appVersion', description: 'image version of the application'}
+        string ( name: 'appVersion', description: 'image version of the application')
         choice (name: 'deploy_to', choices:['dev', 'qa', 'prod'], description: 'Pick the Environment')
     }
     stages {
