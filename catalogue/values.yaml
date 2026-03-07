@@ -1,0 +1,7 @@
+deployment:
+  imageVersion: IMAGEVERSION
+  imageURL: raheemrandy24/catalogue
+
+hpa:
+  maxReplicas: 10
+  utilization: 75
