@@ -1,6 +1,6 @@
 deployment:
+  imageURL: 989088456804.dkr.ecr.us-east-1.amazonaws.com/roboshop/catalogue
   imageVersion: IMAGE_VERSION
-  imageURL: raheemrandy24/catalogue
 
 hpa:
   maxReplicas: 10
