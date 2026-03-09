@@ -1,5 +1,5 @@
 deployment:
-  imageVersion: IMAGEVERSION
+  imageVersion: IMAGE_VERSION
   imageURL: raheemrandy24/catalogue
 
 hpa:
