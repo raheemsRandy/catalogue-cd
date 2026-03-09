@@ -19,7 +19,7 @@ spec:
     matchLabels:
       component: catalogue
       project: roboshop
-      tier: database 
+      tier: app 
 
   #pod definition
   template:
@@ -27,11 +27,12 @@ spec:
         labels:
           component: catalogue
           project: roboshop
-          tier: database 
+          tier: app 
       spec:
         containers:
         - name: catalogue
           image: "{{ .Values.deployment.imageURL }}:{{ .Values.deployment.imageVersion }}"
+          command: ["sh", "-c","echo 'failure' && exit 1" ]
           resources:
             requests:
               cpu: "50m"
