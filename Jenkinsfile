@@ -40,6 +40,7 @@ pipeline {
         stage ('Check Status'){
             steps {
                 script{
+                 withAWS(credentials: 'aws-creds', region: REGION) {
                     def deploymentStatus = sh(returnStdout: true,script: "kubectl rollout status deployment/catalogue --request-timeout=30s || echo  FAILED").trim()
                     if (deploymentStatus.contains("successfully rolled out")) {
                        echo "Deployment is success"
@@ -56,6 +57,7 @@ pipeline {
                             error "Deployment is Failure,Rollback Failure. Application not running"
                         }  
                     }
+                } 
                 }
             }
         }
