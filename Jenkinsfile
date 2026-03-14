@@ -21,7 +21,45 @@ pipeline {
         choice (name: 'deploy_to', choices:['dev', 'qa', 'prod'], description: 'Pick the Environment')
     }
     stages {
+         stage('Check Status') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-creds', region: "${REGION}") {
+                        sh """
+                            aws eks update-kubeconfig --region ${REGION} --name "${PROJECT}-${params.deploy_to}"
+                        """
 
+                        def deploymentStatus = sh(
+                            returnStdout: true,
+                            script: """
+                                kubectl rollout status deployment/${env.COMPONENT} --timeout=60s -n ${PROJECT} || echo FAILED
+                            """
+                        ).trim()
+
+                        if (deploymentStatus.contains("successfully rolled out")) {
+                            echo "✅ Deployment successful!"
+                        } else {
+                            echo "⚠️ Deployment failed. Checking if rollback is possible..."
+                            // Check if a previous Helm revision exists
+                            def revision = sh(returnStdout: true, script: "helm history ${COMPONENT} -n ${PROJECT} | tail -n +2 | wc -l").trim().toInteger()
+
+                            if (revision > 1) {
+                                echo "🔁 Rolling back to previous revision..."
+                                sh """
+                                    helm rollback ${COMPONENT} -n ${PROJECT}
+                                    sleep 20
+                                    kubectl rollout status deployment/${COMPONENT} --timeout=60s -n ${PROJECT} || echo FAILED
+                                """
+                                echo "deployment failed but rollback success"
+                            } else {
+                                echo "🚫 No previous Helm release found — skipping rollback."
+                                error "Deployment failed (no rollback possible)."
+                            }
+                        }
+                    }
+                }
+            }
+        }
         stage('deploy') {
             steps {
                 script {
@@ -61,45 +99,7 @@ pipeline {
         //         }
         //     }
         // }
-        stage('Check Status') {
-            steps {
-                script {
-                    withAWS(credentials: 'aws-creds', region: "${REGION}") {
-                        sh """
-                            aws eks update-kubeconfig --region ${REGION} --name "${PROJECT}-${params.deploy_to}"
-                        """
-
-                        def deploymentStatus = sh(
-                            returnStdout: true,
-                            script: """
-                                kubectl rollout status deployment/${env.COMPONENT} --timeout=60s -n ${PROJECT} || echo FAILED
-                            """
-                        ).trim()
-
-                        if (deploymentStatus.contains("successfully rolled out")) {
-                            echo "✅ Deployment successful!"
-                        } else {
-                            echo "⚠️ Deployment failed. Checking if rollback is possible..."
-                            // Check if a previous Helm revision exists
-                            def revision = sh(returnStdout: true, script: "helm history ${COMPONENT} -n ${PROJECT} | tail -n +2 | wc -l").trim().toInteger()
-
-                            if (revision > 1) {
-                                echo "🔁 Rolling back to previous revision..."
-                                sh """
-                                    helm rollback ${COMPONENT} -n ${PROJECT}
-                                    sleep 20
-                                    kubectl rollout status deployment/${COMPONENT} --timeout=60s -n ${PROJECT} || echo FAILED
-                                """
-                                echo "deployment failed but rollback success"
-                            } else {
-                                echo "🚫 No previous Helm release found — skipping rollback."
-                                error "Deployment failed (no rollback possible)."
-                            }
-                        }
-                    }
-                }
-            }
-        }
+       
 
     //Api testing
     stage('functional testing') {
@@ -125,9 +125,9 @@ pipeline {
             }
         }
     }
-     stage('deploy') {
+     stage('prod-deploy') {
             when {
-            expression { params.deploy_to = "dev"}
+            expression { params.deploy_to = "prod"}
         
             steps {
                 script {
