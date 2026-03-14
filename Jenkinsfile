@@ -105,25 +105,25 @@ pipeline {
     stage('functional testing') {
         when {
             expression { params.deploy_to = "dev"}
-        
+         }
             steps {
                 script {
-                    
+                   echo "Functional testing started" 
                  }    
             }
-        }
+       
     }
      //All components testing
     stage('integration testing') {
         when {
             expression { params.deploy_to = "dev"}
-        
+         }
             steps {
                 script {
-                    
+                    echo "integration testing started"  
                  }    
             }
-        }
+       
     }
      stage('prod-deploy') {
             when {
