@@ -104,7 +104,7 @@ pipeline {
     //Api testing
     stage('functional testing') {
         when {
-            expression { params.deploy_to = "dev"}
+            expression { params.deploy_to == "dev"}
          }
             steps {
                 script {
@@ -116,7 +116,7 @@ pipeline {
      //All components testing
     stage('integration testing') {
         when {
-            expression { params.deploy_to = "dev"}
+            expression { params.deploy_to == "dev"}
          }
             steps {
                 script {
@@ -126,9 +126,9 @@ pipeline {
        
     }
      stage('prod-deploy') {
-            when {
-            expression { params.deploy_to = "prod"}
-        
+         when {
+            expression { params.deploy_to == "prod"}
+         }  
             steps {
                 script {
                     withAWS(credentials: 'aws-creds', region: 'us-east-1') {
@@ -141,7 +141,7 @@ pipeline {
                     }
                 }
             }
-        }
+       
     }
 }
 
