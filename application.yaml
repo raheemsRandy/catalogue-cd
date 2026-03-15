@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    chart: catalogue
     repoURL: https://github.com/raheemsRandy/catalogue-cd.git
     targetRevision: main
+    path: .
     helm:
       releaseName: catalogue
       valueFiles:
