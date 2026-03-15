@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: catalogue
+  namespace: argocd # Namespace where the Argo CD control plane is running
+spec:
+  project: default
+  source:
+    chart: catalogue
+    repoURL: https://github.com/raheemsRandy/catalogue-cd.git
+    targetRevision: main
+    helm:
+      releaseName: catalogue
+      valueFiles:
+      - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc # The target Kubernetes cluster API server
+    namespace: argocd # The target namespace within the cluster
+  syncPolicy:
+    automated: # Enable automated synchronization
+      prune: true # Delete resources that are no longer in Git
+      selfHeal: true # Revert changes made manually in the cluster to match Git
+    syncOptions:
+      - CreateNamespace=true # Automatically create the target namespace if it doesn't exist

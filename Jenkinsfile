@@ -21,7 +21,24 @@ pipeline {
         choice (name: 'deploy_to', choices:['dev', 'qa', 'prod'], description: 'Pick the Environment')
     }
     stages {
-         stage('Check Status') {
+         
+        stage('deploy') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                        sh """
+                            aws eks update-kubeconfig --region $REGION --name "$PROJECT-${params.deploy_to}"
+                            kubectl get nodes
+                            kubectl apply -f 01-namespace.yaml
+                            sed -i "s/IMAGE_VERSION/${params.appVersion}/g" values-${params.deploy_to}.yaml
+                            # helm upgrade --install $COMPONENT -f values-${params.deploy_to}.yaml -n $PROJECT .
+                            kubectl apply -f application.yaml
+                        """
+                    }
+                }
+            }
+        }
+        stage('Check Status') {
             steps {
                 script {
                     withAWS(credentials: 'aws-creds', region: "${REGION}") {
@@ -60,46 +77,6 @@ pipeline {
                 }
             }
         }
-        stage('deploy') {
-            steps {
-                script {
-                    withAWS(credentials: 'aws-creds', region: 'us-east-1') {
-                        sh """
-                            aws eks update-kubeconfig --region $REGION --name "$PROJECT-${params.deploy_to}"
-                            kubectl get nodes
-                            kubectl apply -f 01-namespace.yaml
-                            sed -i "s/IMAGE_VERSION/${params.appVersion}/g" values-${params.deploy_to}.yaml
-                            helm upgrade --install $COMPONENT -f values-${params.deploy_to}.yaml -n $PROJECT .
-                        """
-                    }
-                }
-            }
-        }
-        // stage ('Check Status'){
-        //     steps {
-        //         script{
-        //          withAWS(credentials: 'aws-creds', region: REGION) {
-        //             def deploymentStatus = sh(returnStdout: true,script: "kubectl rollout status deployment/catalogue --timeout=30s -n $PROJECT || echo  FAILED").trim()
-        //             if (deploymentStatus.contains("successfully rolled out")) {
-        //                echo "Deployment is success"
-        //             } else {
-        //                sh """
-        //                     helm rollback $COMPONENT -n $PROJECT
-                            
-        //                """
-        //                def rollbackStatus = sh(returnStdout: true,script: "kubectl rollout status deployment/catalogue --timeout=30s -n $PROJECT || echo  FAILED").trim()
-        //                 if (rollbackStatus.contains("successfully rolled out")) {
-        //                     error "Deployment is Failure,Rollback Success"
-        //                 }
-        //                 else{
-        //                     error "Deployment is Failure,Rollback Failure. Application not running"
-        //                 }  
-        //             }
-        //         } 
-        //         }
-        //     }
-        // }
-       
 
     //Api testing
     stage('functional testing') {
@@ -116,7 +93,7 @@ pipeline {
      //All components testing
     stage('integration testing') {
         when {
-            expression { params.deploy_to == "dev"}
+            expression { params.deploy_to == "qa"}
          }
             steps {
                 script {
